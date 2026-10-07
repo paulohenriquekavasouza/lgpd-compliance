@@ -3,7 +3,7 @@ name: lgpd-compliance
 description: Auditoria e adequação à LGPD e à ANPD em dois modos — "analisar" (diagnóstico e relatório, sem alterar nada) e "corrigir" (aplica as correções propostas, reaproveitando a análise anterior se existir). Funciona com código, pastas, sistemas, bancos, planilhas, políticas de privacidade, termos, contratos, DPAs, formulários, cookies e processos; aponta violações com fundamento legal e gera relatórios, plano de ação, ROPA, RIPD, LIA, comunicação de incidente e resposta a titular. Use sempre que o usuário mencionar LGPD, ANPD, privacidade, proteção de dados, dados pessoais ou sensíveis, consentimento, encarregado/DPO, cookies, vazamento, direitos do titular, adequação ou contrato com operador, mesmo sem dizer "LGPD", como "posso guardar CPF assim?" ou "corrige os problemas de privacidade desse projeto".
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   idioma: pt-BR
 ---
 
@@ -78,6 +78,8 @@ Não modifique nenhum arquivo do alvo. Só escreva na pasta de análise.
    | Processos, governança, planilhas, inventário, titulares, incidentes, fornecedores | `references/processos-e-governanca.md` |
    | Artigos, bases legais, prazos, sanções, resoluções, legislação correlata | `references/base-legal.md` |
 
+   Em código com API (REST, GraphQL, gRPC), faça o inventário de endpoints e verifique o que cada resposta devolve: entidades serializadas inteiras, campos não usados pela tela, credenciais e hashes, dados sensíveis e documentos sem máscara, dados de outros titulares por falta de autorização por recurso ou por tenant, detalhes de erro, PII na URL e cabeçalhos de cache (`references/codigo-e-sistemas.md`, seção 7). O scanner só aponta indícios disso; a confirmação exige seguir o tipo de retorno até o DTO ou a entidade.
+
    Consulte `base-legal.md` sempre que citar artigo ou prazo — um dispositivo errado compromete a credibilidade do relatório inteiro. Analise pela ótica dos princípios do art. 6º: muitas violações reais são de necessidade (coleta excessiva) ou finalidade (uso diferente do informado), não de uma regra isolada.
 4. **Registrar achados** em `analise.json` (seção 4). Cada achado precisa ter a correção descrita de forma concreta o suficiente para que o modo `corrigir` a aplique depois sem reanalisar: arquivo, linha, trecho atual, mudança proposta.
 5. **Selar** a análise (`estado.py selar`) para gravar os hashes dos arquivos citados.
@@ -124,6 +126,7 @@ O pedido de correção autoriza alterar os arquivos do alvo. Não autoriza açõ
 3. **Planejar.** `estado.py pendentes` lista os achados abertos agrupados por `tipo_correcao`, filtrados por `--severidade` e `--ids`. Ordem de execução: críticos primeiro; dentro da mesma severidade, `automatica` antes de `documento`.
 4. **Aplicar `automatica`.** Para cada achado:
    - Releia o trecho atual antes de editar; aplique a correção seguindo o estilo do projeto (padrões em `references/codigo-e-sistemas.md`).
+   - Exposição em respostas de endpoints: crie DTOs por caso de uso e projeção na consulta, aplique máscara e filtros de autorização, e verifique os consumidores (front-end, integrações, testes) que dependem dos campos removidos. Campo removido que é usado por um cliente fora do alvo vira `decisao`.
    - Correções que exigem nova dependência, mudança de schema de banco ou migração de dados: crie o código e a migração, mas não execute migrações contra bancos reais.
    - Documentos existentes (política, contrato, termo): não sobrescreva o original quando ele não for texto editável versionado; gere versão revisada ao lado (`<nome>.revisado.md` ou `.docx` via skill de docx) com a tabela `Texto atual | Texto proposto | Fundamento`.
    - Marque com `estado.py marcar --status resolvido --nota "<o que foi feito>"`.

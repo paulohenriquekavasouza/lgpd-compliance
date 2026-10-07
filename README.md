@@ -132,7 +132,7 @@ Os relatórios descrevem vulnerabilidades. Guarde-os com acesso restrito.
 
 ## O que é analisado
 
-- **Código e sistemas**: coleta excessiva, criptografia e hash de senhas, dados pessoais em logs, segredos expostos, rastreadores sem consentimento, transferência internacional, retenção, direitos do titular, controle de acesso, IA e decisões automatizadas, extensões e userscripts.
+- **Código e sistemas**: respostas de endpoints (entidades completas, campos desnecessários, credenciais, dados sensíveis sem máscara, dados de outros titulares por IDOR ou falta de filtro por tenant, detalhes de erro, PII na URL, cache), coleta excessiva, criptografia e hash de senhas, dados pessoais em logs, segredos expostos, rastreadores sem consentimento, transferência internacional, retenção, direitos do titular, controle de acesso, IA e decisões automatizadas, extensões e userscripts.
 - **Documentos**: política de privacidade, termos de uso, termos de consentimento, DPA, contratos entre controladores, RH, formulários, cookies, marketing, editais, uso de imagem e biometria.
 - **Processos**: maturidade, ROPA, planilhas, atendimento a titulares, incidentes (prazo de 3 dias úteis), fornecedores, encarregado, agentes de pequeno porte.
 - **Base legal**: LGPD; Resoluções CD/ANPD nº 1/2021, 2/2022, 4/2023, 15/2024, 18/2024 e 19/2024; guias da ANPD; legislação correlata e prazos de retenção.
@@ -151,7 +151,7 @@ python3 skills/lgpd-compliance/scripts/gerar_relatorio.py scan.json --output rel
 python3 skills/lgpd-compliance/scripts/estado.py verificar <pasta>
 ```
 
-O scanner valida CPF, CNPJ, PIS e cartões por dígito verificador, detecta e-mail, telefone, CEP, RG, CNS, IP, campos sensíveis, dados de crianças, PII em logs, segredos, rastreadores, hash fraco, TLS desativado e cláusulas abusivas, e lê .docx, .xlsx, .pptx, .odt e .pdf. Os valores encontrados são mascarados na saída; use `--show-values` apenas quando necessário.
+O scanner valida CPF, CNPJ, PIS e cartões por dígito verificador, detecta e-mail, telefone, CEP, RG, CNS, IP, campos sensíveis, dados de crianças, PII em logs, segredos, rastreadores, hash fraco, TLS desativado, entidades devolvidas direto por endpoints, credenciais em DTOs de resposta, erros detalhados expostos, PII em rotas, Swagger/GraphQL abertos, CORS permissivo e cláusulas abusivas, e lê .docx, .xlsx, .pptx, .odt e .pdf. Os valores encontrados são mascarados na saída; use `--show-values` apenas quando necessário.
 
 ## Limitações
 

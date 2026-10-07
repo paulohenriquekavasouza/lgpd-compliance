@@ -36,6 +36,7 @@ EXTENSOES_CODIGO = {
     ".kt", ".kts", ".scala", ".go", ".rs", ".cs", ".vb", ".swift", ".m", ".c", ".h", ".cpp", ".hpp",
     ".dart", ".sql", ".sh", ".bash", ".ps1", ".html", ".htm", ".yml", ".yaml", ".json", ".xml",
     ".tf", ".gradle", ".properties", ".ini", ".cfg", ".conf", ".toml", ".env", ".lua", ".r", ".pl",
+    ".config", ".cshtml", ".razor", ".graphql", ".gql", ".proto",
 }
 
 ARTIGOS = {
@@ -66,6 +67,12 @@ ARTIGOS = {
     "biometria": ["art. 5º, II", "art. 11"],
     "texto_juridico_alerta": ["art. 8º", "art. 9º", "art. 15", "art. 16"],
     "arquivo_sensivel": ["art. 46", "art. 48"],
+    "resposta_entidade_completa": ["art. 6º, III", "art. 46"],
+    "credencial_em_resposta": ["art. 46", "art. 6º, VII"],
+    "erro_detalhado_exposto": ["art. 46", "art. 6º, VII"],
+    "pii_na_url": ["art. 6º, III", "art. 46"],
+    "documentacao_api_exposta": ["art. 46"],
+    "cors_permissivo": ["art. 46"],
 }
 
 DESCRICOES = {
@@ -96,6 +103,12 @@ DESCRICOES = {
     "biometria": "Tratamento de biometria/reconhecimento facial (dado sensível)",
     "texto_juridico_alerta": "Expressão de alerta em texto jurídico/política",
     "arquivo_sensivel": "Arquivo potencialmente sensível versionado",
+    "resposta_entidade_completa": "Endpoint possivelmente devolvendo entidade/objeto completo em vez de DTO com campos necessários",
+    "credencial_em_resposta": "Campo de credencial/segredo em classe de saída (DTO/Response/ViewModel/Serializer) sem exclusão da serialização",
+    "erro_detalhado_exposto": "Detalhes internos de erro (stack trace, exceção, modo debug) possivelmente devolvidos ao cliente",
+    "pii_na_url": "Identificador pessoal em rota ou query string (fica em logs, proxies e histórico)",
+    "documentacao_api_exposta": "Documentação/introspecção da API habilitada (verificar se restrita a desenvolvimento ou autenticada)",
+    "cors_permissivo": "CORS permissivo (qualquer origem)",
 }
 
 SEVERIDADE_BASE = {
@@ -106,6 +119,8 @@ SEVERIDADE_BASE = {
     "armazenamento_cliente": "media", "transmissao_insegura": "baixa", "hash_fraco": "media",
     "tls_desabilitado": "alta", "envio_externo": "media", "geolocalizacao": "media", "biometria": "alta",
     "texto_juridico_alerta": "media", "arquivo_sensivel": "alta",
+    "resposta_entidade_completa": "media", "credencial_em_resposta": "alta", "erro_detalhado_exposto": "media",
+    "pii_na_url": "media", "documentacao_api_exposta": "baixa", "cors_permissivo": "media",
 }
 
 RE_CPF = re.compile(r"(?<![\d.\-/])(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})(?![\d.\-/])")
@@ -182,6 +197,48 @@ RE_CONTEXTO_SENHA = re.compile(r"(?i)(senha|password|passwd|pwd|cpf|email|token)
 RE_TLS_OFF = re.compile(r"(?i)(verify\s*=\s*False|rejectUnauthorized\s*:\s*false|NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*['\"]?0|InsecureSkipVerify\s*:\s*true|CURLOPT_SSL_VERIFYPEER\s*,\s*(?:false|0)|ServerCertificateValidationCallback\s*=.*true|TrustAllCerts|setHostnameVerifier\(.*ALLOW_ALL)")
 RE_ENVIO_EXTERNO = re.compile(r"(?i)(GM_xmlhttpRequest|GM\.xmlHttpRequest|navigator\.sendBeacon|new\s+WebSocket\s*\(\s*['\"]wss?://|fetch\s*\(\s*['\"]https?://|axios\.(?:post|put)\s*\(\s*['\"]https?://|\$\.(?:post|ajax)\s*\(\s*\{?\s*(?:url\s*:\s*)?['\"]https?://|@connect\s+\S+)")
 
+ENTIDADES = r"(?:paciente|usuario|usuário|user|cliente|customer|patient|funcionario|colaborador|employee|pessoa|person|medico|profissional|titular|contato|contact|lead|aluno|student|prontuario|atendimento)s?"
+RE_RESPOSTA_ENTIDADE = [
+    re.compile(r"(?i)\b(?:return\s+)?(?:Ok|Json|Created\w*|Results\.Ok|TypedResults\.Ok)\(\s*(?:await\s+)?(?:new\s+\{[^}]*\}\s*,\s*)?(" + ENTIDADES + r")\s*\)"),
+    re.compile(r"(?i)\b(?:Ok|Json|Results\.Ok)\(\s*(?:await\s+)?_?\w*\.(" + ENTIDADES + r")\b(?![^;]*\.Select\w*\()[^;]*\.(?:ToList|ToArray|First|Single|Find)\w*\("),
+    re.compile(r"(?i)\b(?:res|response|reply|ctx)\.(?:json|send|status\(\d+\)\.json)\(\s*(?:await\s+)?(" + ENTIDADES + r")\s*\)"),
+    re.compile(r"(?i)\bctx\.body\s*=\s*(" + ENTIDADES + r")\s*;?$"),
+    re.compile(r"(?i)\brender\s+json:\s*@?(" + ENTIDADES + r")\b\s*$"),
+    re.compile(r"(?i)\bc\.JSON\(\s*[\w.]+\s*,\s*&?(" + ENTIDADES + r")\s*\)"),
+    re.compile(r"(?i)\bfields\s*=\s*['\"](__all__)['\"]"),
+    re.compile(r"(?i)\b(model_to_dict)\s*\("),
+    re.compile(r"(?i)\bjsonify\(\s*(" + ENTIDADES + r")\.__dict__"),
+]
+RE_ARQUIVO_SAIDA = re.compile(r"(?i)(dto|response|resposta|viewmodel|vm|resource|serializer|output|result|retorno|presenter|view)\w*\.\w+$")
+RE_ARQUIVO_ENTRADA = re.compile(r"(?i)(request|input|command|comando|create|update|login|register|signup|cadastro|alterar|criar|auth|credential|credencial|token|options|settings|config)")
+RE_CAMPO_CREDENCIAL = re.compile(r"(?i)^\s*(?:\[[^\]]*\]\s*)*(?:public|private|protected|internal|readonly|export|val|var|let)?\s*(?:[\w<>\[\]?,.]+\s+)?(senha\w*|password\w*|passwd|salt|securitystamp|refresh_?token|reset_?token|access_?token|mfa_?secret|totp_?secret|two_?factor_?secret|api_?key|secret\w*|codigo_?recuperacao|recovery_?code)\s*(?:[?!]?\s*:|\{|=|;)")
+RE_CAMPO_SERIALIZER = re.compile(r"(?i)\bfields\s*=\s*[\[(][^\])]*['\"](password|senha|token|secret|salt)['\"]")
+RE_EXCLUSAO_SERIALIZACAO = re.compile(r"(?i)(JsonIgnore|IgnoreDataMember|@Exclude|Exclude\(|WRITE_ONLY|write_only|\$hidden|NonSerialized|transient|@JsonProperty\(\s*access|toJSON|select:\s*false|SwaggerIgnore)")
+RE_ERRO_DETALHADO = [
+    re.compile(r"\bUseDeveloperExceptionPage\s*\("),
+    re.compile(r"(?i)customErrors\s+mode\s*=\s*\"Off\""),
+    re.compile(r"^\s*DEBUG\s*=\s*True\b"),
+    re.compile(r"\b(?:app\.debug\s*=\s*True|app\.run\([^)]*debug\s*=\s*True)"),
+    re.compile(r"(?i)\b(?:res|response|reply)\.(?:status\(\s*\d+\s*\)\.)?(?:json|send)\(\s*(?:\{[^}]*\b(?:err|error|e|ex)(?:\.stack|\.message)?\b[^}]*\}|(?:err|error|e|ex)(?:\.stack)?)\s*\)"),
+    re.compile(r"(?i)\b(?:BadRequest|Ok|StatusCode|Problem|Json|ObjectResult)\([^;]*\b(?:ex|e|exception|erro)\.(?:ToString\(\)|StackTrace|InnerException)"),
+    re.compile(r"(?i)\b(?:BadRequest|StatusCode|Problem)\([^;]*\b(?:ex|exception)\.Message"),
+    re.compile(r"(?i)server\.error\.include-(?:stacktrace|exception|message)\s*[=:]\s*(?:always|true)"),
+    re.compile(r"(?i)\bIncludeExceptionDetails\w*\s*=\s*true"),
+    re.compile(r"(?i)traceback\.format_exc\(\)[^\n]*(?:return|Response|jsonify)|(?:return|Response|jsonify)[^\n]*traceback\.format_exc\(\)"),
+]
+CAMPOS_URL = r"(?:cpf|cnpj|rg|email|e-mail|telefone|celular|phone|cns|cartao_?sus|nome|name|data_?nascimento|birth_?date)"
+RE_PII_URL = [
+    re.compile(r"(?i)\[(?:Http(?:Get|Post|Put|Patch|Delete)|Route)\(\s*\"[^\"]*\{" + CAMPOS_URL + r"\b"),
+    re.compile(r"(?i)\bMap(?:Get|Post|Put|Patch|Delete)\(\s*\"[^\"]*\{" + CAMPOS_URL + r"\b"),
+    re.compile(r"(?i)\.(?:get|post|put|patch|delete|all|route)\(\s*['\"`][^'\"`]*:" + CAMPOS_URL + r"\b"),
+    re.compile(r"(?i)@(?:Get|Post|Put|Patch|Delete|Request)Mapping\(\s*(?:value\s*=\s*)?\"[^\"]*\{" + CAMPOS_URL + r"\b"),
+    re.compile(r"(?i)@(?:Get|Post|Put|Patch|Delete)\(\s*['\"][^'\"]*:" + CAMPOS_URL + r"\b"),
+    re.compile(r"(?i)(?:path|re_path|url)\(\s*r?['\"][^'\"]*<(?:\w+:)?" + CAMPOS_URL + r">"),
+    re.compile(r"(?i)['\"`][^'\"`\s]*[?&]" + CAMPOS_URL + r"=(?:\$\{|['\"`]\s*\+|\{|%s|\w)"),
+]
+RE_DOC_API = re.compile(r"(?i)(\bUseSwagger(?:UI)?\s*\(|\bMapOpenApi\s*\(|swagger-ui-express|SwaggerModule\.setup|springdoc|@EnableSwagger2|drf_yasg|drf_spectacular|introspection\s*:\s*true|graphiql\s*:\s*true|playground\s*:\s*true)")
+RE_CORS = re.compile(r"(?i)(\bAllowAnyOrigin\s*\(|SetIsOriginAllowed\(\s*_?\s*=>\s*true|Access-Control-Allow-Origin['\"]?\s*[:,]\s*['\"]\*|\bcors\(\s*\)|origin\s*:\s*(?:true|['\"]\*['\"])|CORS_ALLOW_ALL_ORIGINS\s*=\s*True|CORS_ORIGIN_ALLOW_ALL\s*=\s*True|@CrossOrigin\(\s*(?:origins\s*=\s*)?\"\*\"|allowedOrigins\(\s*\"\*\")")
+
 ALERTAS_JURIDICOS = [
     (r"tempo\s+indeterminado|indefinidamente|prazo\s+indeterminado|permanentemente\s+armazenad", "Retenção sem prazo definido"),
     (r"para\s+quaisquer\s+fins|para\s+qualquer\s+finalidade|todos\s+os\s+fins", "Autorização genérica (nula — art. 8º, §4º)"),
@@ -199,9 +256,10 @@ RE_ALERTAS = [(re.compile(p, re.I), d) for p, d in ALERTAS_JURIDICOS]
 ARQUIVOS_SENSIVEIS = [
     ".env", ".env.*", "*.pem", "*.key", "*.p12", "*.pfx", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
     "*.sql.gz", "*dump*.sql", "*backup*.sql", "*.bak", "credentials*", "*secret*", "*.kdbx",
-    "*clientes*.csv", "*clientes*.xlsx", "*pacientes*", "*funcionarios*", "*colaboradores*", "*leads*.csv",
-    "*cadastro*.csv", "*cadastro*.xlsx", "*folha*pagamento*",
+    "*leads*.csv",
 ]
+NOMES_DADOS_PESSOAIS = re.compile(r"(?i)(clientes|pacientes|funcionarios|funcionários|colaboradores|cadastro|leads|folha.*pagamento|alunos|usuarios|usuários|contatos|customers|patients|employees|users)")
+EXTENSOES_DADOS = {".csv", ".tsv", ".xlsx", ".xls", ".ods", ".json", ".sql", ".txt", ".xml", ".pdf", ".docx", ".doc", ".zip", ".bak", ".mdb", ".accdb", ".dbf"}
 EXCECOES_ARQUIVOS_SENSIVEIS = [".env.example", ".env.sample", ".env.template", ".env.dist"]
 
 
@@ -420,7 +478,8 @@ class Scanner:
     def analisar_arquivo(self, caminho, exibir=None):
         self.exibir = exibir or caminho
         nome = os.path.basename(caminho)
-        if any(fnmatch.fnmatch(nome.lower(), p) for p in ARQUIVOS_SENSIVEIS) and nome.lower() not in EXCECOES_ARQUIVOS_SENSIVEIS:
+        dados_pessoais = os.path.splitext(nome)[1].lower() in EXTENSOES_DADOS and NOMES_DADOS_PESSOAIS.search(nome) and not re.search(r"(?i)(schema|swagger|openapi|package|tsconfig|appsettings|mock|fixture|seed|exemplo|example|sample)", nome)
+        if (dados_pessoais or any(fnmatch.fnmatch(nome.lower(), p) for p in ARQUIVOS_SENSIVEIS)) and nome.lower() not in EXCECOES_ARQUIVOS_SENSIVEIS:
             self.registrar(caminho, 0, "arquivo_sensivel", nome, detalhe="verificar se deveria estar versionado/compartilhado")
         try:
             if os.path.getsize(caminho) > self.max_bytes and os.path.splitext(caminho)[1].lower() not in EXTENSOES_OFFICE | {".pdf"}:
@@ -441,12 +500,50 @@ class Scanner:
         vistos = set()
         rastreadores_vistos = set()
         linhas = texto.splitlines()
+        anterior = ""
         for i, linha in enumerate(linhas, 1):
             if len(linha) > 5000:
                 linha = linha[:5000]
             self.detectar_identificadores(caminho, i, linha, vistos)
             if tipo in ("codigo", "texto", "dados") or tipo == "documento":
                 self.detectar_contexto(caminho, i, linha, tipo, vistos, rastreadores_vistos)
+            if tipo == "codigo":
+                self.detectar_api(caminho, i, linha, anterior, vistos)
+            if linha.strip():
+                anterior = linha
+
+    def detectar_api(self, caminho, i, linha, anterior, vistos):
+        nome = os.path.basename(caminho)
+        if re.match(r"^\s*(//|#|\*|/\*|<!--|--)", linha):
+            return
+        for r in RE_RESPOSTA_ENTIDADE:
+            m = r.search(linha)
+            if m:
+                self.registrar(caminho, i, "resposta_entidade_completa", linha, detalhe=f"retorno: {m.group(1)} — confirmar o tipo e os campos serializados")
+                break
+        if RE_ARQUIVO_SAIDA.search(nome) and not RE_ARQUIVO_ENTRADA.search(nome):
+            m = RE_CAMPO_CREDENCIAL.search(linha)
+            if m and not RE_EXCLUSAO_SERIALIZACAO.search(linha) and not RE_EXCLUSAO_SERIALIZACAO.search(anterior):
+                self.registrar(caminho, i, "credencial_em_resposta", linha, detalhe=f"campo: {m.group(1)} — confirmar se a classe é usada em respostas")
+        m = RE_CAMPO_SERIALIZER.search(linha)
+        if m:
+            self.registrar(caminho, i, "credencial_em_resposta", linha, detalhe=f"campo: {m.group(1)} na lista de fields do serializer")
+        for r in RE_ERRO_DETALHADO:
+            if r.search(linha):
+                contexto = (anterior + " " + linha).lower()
+                if "isdevelopment" in contexto or "development" in contexto:
+                    break
+                self.registrar(caminho, i, "erro_detalhado_exposto", linha)
+                break
+        for r in RE_PII_URL:
+            m = r.search(linha)
+            if m:
+                self.registrar(caminho, i, "pii_na_url", linha)
+                break
+        if RE_DOC_API.search(linha) and self.adicionar_unico(vistos, ("docapi", caminho)):
+            self.registrar(caminho, i, "documentacao_api_exposta", linha)
+        if RE_CORS.search(linha):
+            self.registrar(caminho, i, "cors_permissivo", linha)
 
     def adicionar_unico(self, vistos, chave):
         if chave in vistos:

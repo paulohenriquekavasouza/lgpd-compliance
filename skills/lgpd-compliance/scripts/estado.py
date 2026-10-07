@@ -7,7 +7,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 
-VERSAO = "1.1.0"
+VERSAO = "1.2.0"
 PASTA_PADRAO = ".lgpd-compliance"
 SEVERIDADES = ["critica", "alta", "media", "baixa", "info"]
 ORDEM = {s: i for i, s in enumerate(SEVERIDADES)}

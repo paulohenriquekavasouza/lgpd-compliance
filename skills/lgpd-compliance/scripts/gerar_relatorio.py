@@ -40,6 +40,9 @@ DOMINIO_POR_CATEGORIA = {
     "armazenamento_cliente": "seguranca", "transmissao_insegura": "seguranca", "hash_fraco": "seguranca",
     "tls_desabilitado": "seguranca", "envio_externo": "terceiros", "geolocalizacao": "bases_legais",
     "texto_juridico_alerta": "transparencia", "arquivo_sensivel": "seguranca",
+    "resposta_entidade_completa": "seguranca", "credencial_em_resposta": "seguranca",
+    "erro_detalhado_exposto": "seguranca", "pii_na_url": "seguranca",
+    "documentacao_api_exposta": "seguranca", "cors_permissivo": "seguranca",
 }
 RECOMENDACOES_SCAN = {
     "cpf": "Confirmar se são dados reais. Remover do arquivo/repositório, substituir por dados sintéticos e, se versionado, limpar histórico e avaliar incidente.",
@@ -69,6 +72,12 @@ RECOMENDACOES_SCAN = {
     "geolocalizacao": "Coletar somente com finalidade clara, transparência e base legal; preferir precisão reduzida e coleta sob demanda.",
     "texto_juridico_alerta": "Revisar a redação conforme references/documentos-juridicos.md (seção 14).",
     "arquivo_sensivel": "Verificar se o arquivo deveria estar versionado/compartilhado; remover e proteger se contiver dados ou credenciais.",
+    "resposta_entidade_completa": "Devolver DTO específico por caso de uso com apenas os campos necessários, usando projeção na consulta; mascarar documentos e restringir dados sensíveis por perfil.",
+    "credencial_em_resposta": "Remover credenciais e segredos das classes de saída e excluí-los da serialização ([JsonIgnore], @Exclude, $hidden, write_only).",
+    "erro_detalhado_exposto": "Devolver erros genéricos ao cliente (com traceId) e registrar detalhes apenas no log, sem dados pessoais; desativar páginas de exceção e modo debug fora de desenvolvimento.",
+    "pii_na_url": "Usar identificador interno na rota e enviar documentos/e-mail no corpo de requisições POST.",
+    "documentacao_api_exposta": "Restringir Swagger/OpenAPI e introspecção do GraphQL a desenvolvimento ou exigir autenticação.",
+    "cors_permissivo": "Restringir CORS às origens conhecidas, principalmente em endpoints autenticados.",
 }
 
 
