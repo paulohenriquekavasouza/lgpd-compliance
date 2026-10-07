@@ -1,0 +1,21 @@
+{
+  "name": "lgpd-compliance",
+  "owner": {
+    "name": "Paulo Henrique Kava de Souza"
+  },
+  "metadata": {
+    "description": "Skill de auditoria e adequação à LGPD para Claude Code.",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "lgpd-compliance",
+      "source": "./",
+      "description": "Analisa e corrige não conformidades com a LGPD em código, documentos, contratos e processos, e gera relatórios.",
+      "version": "1.1.0",
+      "license": "MIT",
+      "category": "compliance",
+      "keywords": ["lgpd", "anpd", "privacidade", "proteção de dados", "compliance"]
+    }
+  ]
+}
